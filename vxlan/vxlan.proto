@@ -1,0 +1,170 @@
+syntax = "proto3";
+option go_package = "github.com/grmrgecko/virtual-vxlan/vxlan";
+
+package vxlan;
+
+service vxlan {
+    // Config commands.
+    rpc SaveConfig (Empty) returns (Empty) {}
+    rpc ReloadConfig (Empty) returns (Empty) {}
+
+    // Listener commands.
+    rpc ListListeners (Empty) returns (ListListenersReply) {}
+    rpc AddListener (Listener) returns (Empty) {}
+    rpc RemoveListener (ListenerRequestWithName) returns (Empty) {}
+    rpc SetListenerMaxMessageSize (ListenerMaxMessageSizeRequest) returns (Empty) {}
+    rpc GetListenerMaxMessageSize (ListenerRequestWithName) returns (ListenerMaxMessageSizeReply) {}
+
+    // Interface commands.
+    rpc ListInterfaces (ListenerRequestWithName) returns (ListInterfacesReply) {}
+    rpc AddInterface (AddInterfaceRequest) returns (Empty) {}
+    rpc RemoveInterface (InterfaceRequestWithName) returns (Empty) {}
+    rpc SetInterfaceMTU (InterfaceMTURequest) returns (Empty) {}
+    rpc GetInterfaceMTU (InterfaceRequestWithName) returns (InterfaceMTUReply) {}
+    rpc SetInterfaceMACAddress (InterfaceMACAddressRequest) returns (Empty) {}
+    rpc GetInterfaceMACAddress (InterfaceRequestWithName) returns (InterfaceMACAddressReply) {}
+    rpc SetInterfaceIPAddresses (InterfaceIPAddressesRequest) returns (Empty) {}
+    rpc GetInterfaceIPAddresses (InterfaceRequestWithName) returns (InterfaceIPAddressesReply) {}
+    rpc InterfaceAddMACEntry (InterfaceMacEntryRequest) returns (Empty) {}
+    rpc InterfaceRemoveMACEntry (InterfaceRemoveMacEntryRequest) returns (Empty) {}
+    rpc InterfaceGetMACEntries (InterfaceRequestWithName) returns (InterfaceMacEntryReply) {}
+    rpc InterfaceFlushMACTable (InterfaceRequestWithName) returns (Empty) {}
+    rpc InterfaceAddStaticARPEntry (InterfaceARPEntryRequest) returns (Empty) {}
+    rpc InterfaceRemoveARPEntry (InterfaceRemoveARPEntryRequest) returns (Empty) {}
+    rpc InterfaceGetARPEntries (InterfaceRequestWithName) returns (InterfaceArpEntryReply) {}
+    rpc InterfaceFlushARPTable (InterfaceRequestWithName) returns (Empty) {}
+}
+
+// Standard empty message.
+message Empty {
+}
+
+// Listener messages.
+message ListenerRequestWithName {
+    string name = 1;
+}
+
+message Listener {
+    string name = 1;
+    string address = 2;
+    int32 maxMessageSize = 3;
+    bool permanent = 4;
+}
+
+message ListListenersReply {
+    repeated Listener listeners = 1;
+}
+
+message ListenerMaxMessageSizeRequest {
+    string name = 1;
+    int32 size = 2;
+}
+
+message ListenerMaxMessageSizeReply {
+    int32 size = 1;
+}
+
+// Interface messages.
+message Interface {
+    string name = 1;
+    uint32 vni = 2;
+    int32 mtu = 3;
+    bool permanent = 4;
+}
+
+message ListInterfacesReply {
+    repeated Interface interfaces = 1;
+}
+
+message AddInterfaceRequest {
+    string listenerName = 1;
+    string name = 2;
+    uint32 vni = 3;
+    int32 mtu = 4;
+    bool permanent = 5;
+}
+
+message InterfaceRequestWithName {
+    string listenerName = 1;
+    string name = 2;
+}
+
+message InterfaceMTURequest {
+    string listenerName = 1;
+    string name = 2;
+    int32 mtu = 3;
+}
+
+message InterfaceMTUReply {
+    int32 mtu = 1;
+}
+
+message InterfaceMACAddressRequest {
+    string listenerName = 1;
+    string name = 2;
+    string mac = 3;
+}
+
+message InterfaceMACAddressReply {
+    string mac = 1;
+}
+
+message InterfaceIPAddressesRequest {
+    string listenerName = 1;
+    string name = 2;
+    repeated string ipAddress = 3;
+}
+
+message InterfaceIPAddressesReply {
+    repeated string ipAddress = 1;
+}
+
+message InterfaceMacEntryRequest {
+    string listenerName = 1;
+    string name = 2;
+    string mac = 3;
+    string destination = 4;
+    bool permanent = 5;
+}
+
+message InterfaceRemoveMacEntryRequest {
+    string listenerName = 1;
+    string name = 2;
+    string mac = 3;
+    string destination = 4;
+}
+
+message MacEntry {
+    string mac = 1;
+    string destination = 2;
+    bool permanent = 3;
+}
+
+message InterfaceMacEntryReply {
+    repeated MacEntry entries = 1;
+}
+
+message InterfaceARPEntryRequest {
+    string listenerName = 1;
+    string name = 2;
+    string address = 3;
+    string mac = 4;
+    bool permanent = 5;
+}
+
+message InterfaceRemoveARPEntryRequest {
+    string listenerName = 1;
+    string name = 2;
+    string address = 3;
+}
+
+message ArpEntry {
+    string address = 1;
+    string mac = 2;
+    string expires = 3;
+    bool permanent = 4;
+}
+
+message InterfaceArpEntryReply {
+    repeated ArpEntry entries = 1;
+}
