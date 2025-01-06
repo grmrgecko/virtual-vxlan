@@ -29,7 +29,7 @@ type Config struct {
 
 type LogConfig struct {
 	Level string `fig:"level" yaml:"level" enum:"debug,info,warn,error" default:"info"`
-	Type  string `fig:"level" yaml:"level" enum:"json,console" default:"console"`
+	Type  string `fig:"type" yaml:"type" enum:"json,console" default:"console"`
 }
 
 // Configuration for updating.
