@@ -1,4 +1,6 @@
 .release-env
+CHANGELOG.md
+.cache
 virtual-vxlan.exe
 virtual-vxlan
 dist

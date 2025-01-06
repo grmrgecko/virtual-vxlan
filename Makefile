@@ -17,9 +17,8 @@ build-docker-image:
 
 .PHONY: deps
 deps:
-	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
-	go get -u github.com/git-chglog/git-chglog/cmd/git-chglog
-	go get -u golang.org/x/tools/cmd/goimports
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install golang.org/x/tools/cmd/goimports@latest
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
@@ -37,32 +36,36 @@ generate:
 clean:
 	rm -rf virtual-vxlan* dist CHANGELOG.md
 
-.PHONY: changelog
-changelog:
-	git-chglog $(VERSION) > CHANGELOG.md
-
 .PHONY: snapshot
 snapshot:
+	mkdir -p .cache/go
 	docker run \
 		--rm  --privileged \
+		--user 1000:1000 \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(CURDIR):/go/src/$(PACKAGE_NAME) \
 		-v $(CURDIR)/sysroot:/sysroot \
+		-v $(CURDIR)/.cache:/.cache \
+		-v $(CURDIR)/.cache/go:/go \
 		-w /go/src/$(PACKAGE_NAME) \
 		goreleaser-cross:latest \
 		--clean --skip=publish --snapshot --verbose
 
 .PHONY: release
-release: changelog
+release:
+	mkdir -p .cache/go
 	docker run \
 		--rm  --privileged \
+		--user 1000:1000 \
 		--env-file .release-env \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(CURDIR):/go/src/$(PACKAGE_NAME) \
 		-v $(CURDIR)/sysroot:/sysroot \
+		-v $(CURDIR)/.cache:/.cache \
+		-v $(CURDIR)/.cache/go:/go \
 		-w /go/src/$(PACKAGE_NAME) \
 		goreleaser-cross:latest \
-		--clean --release-notes=CHANGELOG.md
+		--clean --skip=validate
 
 .PHONY: lint
 lint:
