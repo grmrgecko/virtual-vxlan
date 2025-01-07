@@ -63,7 +63,7 @@ archives:
       - linux-amd64
     name_template: "{{ .ProjectName }}-{{ .Version }}.{{ .Os }}-{{ .Arch }}"
     wrap_in_directory: true
-  - id: windows-x64
+  - id: windows
     format: zip
     builds:
       - windows-x64
@@ -72,7 +72,7 @@ archives:
     files:
       - LICENSE.txt
       - README.md
-      - src: wintun/bin/amd64/wintun.dll
+      - src: wintun/bin/{{ .Arch }}/wintun.dll
         dst: wintun.dll
       - src: wintun/LICENSE.txt
         dst: wintun-LICENSE.txt

@@ -199,6 +199,11 @@ func CheckForUpdate(c *UpdateConfig, relaunch bool) {
 	c.CurrentVersion = serviceVersion
 	c.ShouldRelaunch = relaunch
 	c.PreUpdate = func() {
+		// If no app defined, stop here.
+		if app == nil {
+			return
+		}
+
 		// Stop all listeners to allow updated service to start.
 		for len(app.Net.Listeners) >= 1 {
 			app.Net.Listeners[0].Close()
@@ -218,6 +223,11 @@ func CheckForUpdate(c *UpdateConfig, relaunch bool) {
 	c.StartupTimeout = 5 * time.Minute
 	// If update is aborted, we should restart the service.
 	c.AbortUpdate = func() {
+		// If no app defined, stop here.
+		if app == nil {
+			return
+		}
+
 		// Read the configuration from file.
 		config := ReadConfig()
 
