@@ -79,10 +79,8 @@ func (a *ServerCmd) Run() error {
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
 	// Run program signal handler.
+sigLoop:
 	for {
-		// If this service is stopped by signal, this flag will be changed.
-		done := false
-
 		// Check for a signal.
 		select {
 		case sig := <-c:
@@ -104,15 +102,11 @@ func (a *ServerCmd) Run() error {
 				// The default signal is either termination or interruption,
 				// so we should stop the loop.
 			default:
-				done = true
+				break sigLoop
 			}
 			// If the app stops itself, mark as done.
 		case <-app.Stop:
-			done = true
-		}
-		if done {
-			close(app.Stop)
-			break
+			break sigLoop
 		}
 	}
 

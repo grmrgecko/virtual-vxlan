@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -68,13 +69,55 @@ func NewListener(name, address string, maxMessageSize int, perm bool) (l *Listen
 		}
 	}
 
-	// On Windows, there is no public way to configure hardware vxlan offloading.
-	// This in term filters packets that are destined to non-broadcast MAC addresses
-	// in vxlan packets. Which prevents us from receiving the packets, so we set the
-	// interface to promiscuous mode to allow us to receive packets. We can only do
-	// this if the IP address provided is an absolute address.
+	llog := log.WithFields(log.Fields{
+		"listener": addr.String(),
+	})
+
+	// Check if we're binding to an interface.
 	var promisc *Promiscuous
 	if !isZeroAddr(addr.IP) {
+		// Check that the interface exists, on Windows it may be a bit before the interface
+		// becomes available.
+		tries := 0
+	tryLoop:
+		for {
+			// Get interface list.
+			ifaces, err := net.Interfaces()
+			if err != nil {
+				return nil, fmt.Errorf("unable to get interface list %s", err)
+			}
+
+			// Check the IP list of each interface for a matching IP to bind addr.
+			for _, iface := range ifaces {
+				addrs, err := iface.Addrs()
+				if err != nil {
+					continue
+				}
+
+				// If this address has the bind address, we can stop here.
+				for _, address := range addrs {
+					ipAddr, _, _ := net.ParseCIDR(address.String())
+					if addr.IP.Equal(ipAddr) {
+						break tryLoop
+					}
+				}
+			}
+
+			// If the bind address wasn't found on an interface, try again for 5 minutes.
+			tries++
+			if tries < 5 {
+				llog.Print("Unable to find interface, will check again in 1 minute...")
+				time.Sleep(time.Minute)
+			} else {
+				// If we passed 5 minutes, we should stop...
+				break
+			}
+		}
+
+		// On Windows, there is no public way to configure hardware vxlan offloading.
+		// This in term filters packets that are destined to non-broadcast MAC addresses
+		// in vxlan packets. Which prevents us from receiving the packets, so we set the
+		// interface to promiscuous mode to allow us to receive packets.
 		promisc, err = SetInterfacePromiscuous(addr.IP)
 		if err != nil {
 			return
@@ -96,9 +139,7 @@ func NewListener(name, address string, maxMessageSize int, perm bool) (l *Listen
 	l.net.maxMessageSizeC = make(chan int)
 	l.net.conn = conn
 	l.net.promisc = promisc
-	l.log = log.WithFields(log.Fields{
-		"listener": addr.String(),
-	})
+	l.log = llog
 	l.closed = make(chan struct{})
 	l.Permanent = perm
 	app.Net.Listeners = append(app.Net.Listeners, l)
