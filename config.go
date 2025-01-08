@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"net/netip"
 	"os"
@@ -30,6 +31,7 @@ type Config struct {
 type LogConfig struct {
 	Level string `fig:"level" yaml:"level" enum:"debug,info,warn,error" default:"info"`
 	Type  string `fig:"type" yaml:"type" enum:"json,console" default:"console"`
+	Path  string `fig:"path" yaml:"path" default:""`
 }
 
 // Configuration for updating.
@@ -80,7 +82,7 @@ type MACEntryConfig struct {
 func (c *Config) ApplyFilters(configDir string) {
 	// If the RPC path isn't set, set it to temp dir.
 	if c.RPCPath == "" {
-		c.RPCPath = filepath.Join(configDir, "virtual-vxlan.sock")
+		c.RPCPath = filepath.Join(configDir, fmt.Sprintf("%s.sock", serviceName))
 	}
 	// Check if the RPC socket already exists.
 	_, err := os.Stat(c.RPCPath)
@@ -492,7 +494,9 @@ func SaveConfig() error {
 	return err
 }
 
+// Apply log config.
 func (l *LogConfig) Apply() {
+	// Apply level.
 	switch l.Level {
 	case "debug":
 		log.SetLevel(log.DebugLevel)
@@ -503,10 +507,30 @@ func (l *LogConfig) Apply() {
 	default:
 		log.SetLevel(log.ErrorLevel)
 	}
+
+	// Apply type.
 	switch l.Type {
 	case "json":
 		log.SetFormatter(&log.JSONFormatter{})
 	default:
 		log.SetFormatter(&log.TextFormatter{})
+	}
+
+	// If path isn't set, make it the executable location.
+	if l.Path == "" {
+		exe, err := os.Executable()
+		if err != nil {
+			panic(err)
+		}
+		l.Path = filepath.Join(filepath.Dir(exe), fmt.Sprintf("%s.log", serviceName))
+	}
+
+	// Set the log to save to the logpath.
+	f, err := os.OpenFile(l.Path, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		log.Println("Failed to open log file: %s %v", l.Path, err)
+	} else {
+		mw := io.MultiWriter(f, os.Stdout)
+		log.SetOutput(mw)
 	}
 }

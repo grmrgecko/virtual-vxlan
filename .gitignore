@@ -3,5 +3,6 @@ CHANGELOG.md
 .cache
 virtual-vxlan.exe
 virtual-vxlan
+virtual-vxlan.log
 dist
 sysroot/linux*
