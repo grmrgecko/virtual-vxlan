@@ -112,6 +112,14 @@ func ConfigPath() (fileDir, fileName string) {
 	if flags.ConfigPath != "" {
 		fileDir, fileName = filepath.Split(flags.ConfigPath)
 	}
+
+	// Verify directory exists.
+	if _, ferr := os.Stat(fileDir); ferr != nil {
+		err := os.MkdirAll(fileDir, 0755)
+		if err != nil {
+			log.Error("Failed to make directory:", err)
+		}
+	}
 	return
 }
 
@@ -480,14 +488,6 @@ func SaveConfig() error {
 
 	// Find the file name.
 	fileDir, fileName := ConfigPath()
-
-	// Verify directory exists.
-	if _, ferr := os.Stat(fileDir); ferr != nil {
-		err = os.MkdirAll(fileDir, 0755)
-		if err != nil {
-			log.Error("Failed to make directory:", err)
-		}
-	}
 
 	// Write the configuration file.
 	err = os.WriteFile(filepath.Join(fileDir, fileName), data, 0644)
