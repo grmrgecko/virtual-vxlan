@@ -77,10 +77,10 @@ type MACEntryConfig struct {
 }
 
 // Applies common filters to the read configuration.
-func (c *Config) ApplyFilters() {
+func (c *Config) ApplyFilters(configDir string) {
 	// If the RPC path isn't set, set it to temp dir.
 	if c.RPCPath == "" {
-		c.RPCPath = filepath.Join(os.TempDir(), "virtual-vxlan.sock")
+		c.RPCPath = filepath.Join(configDir, "virtual-vxlan.sock")
 	}
 	// Check if the RPC socket already exists.
 	_, err := os.Stat(c.RPCPath)
@@ -140,7 +140,7 @@ func ReadMinimalConfig() *Config {
 	}
 
 	// Apply config filters.
-	config.ApplyFilters()
+	config.ApplyFilters(fileDir)
 
 	// Apply any log configurations loaded from file.
 	config.Log.Apply()
@@ -163,7 +163,7 @@ func ReadConfig() *Config {
 	}
 
 	// Apply config filters.
-	config.ApplyFilters()
+	config.ApplyFilters(fileDir)
 
 	// Apply any log configurations loaded from file.
 	config.Log.Apply()
