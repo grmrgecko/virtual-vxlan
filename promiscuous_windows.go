@@ -7,6 +7,7 @@ import (
 	"net"
 	"strings"
 	"syscall"
+	"time"
 	"unsafe"
 
 	"github.com/google/gopacket/pcap"
@@ -121,7 +122,25 @@ func (p *Promiscuous) tryICMPListen(ifaceIP net.IP) (err error) {
 	}
 
 	// Use listen packet to start a connection.
-	p.conn, err = cfg.ListenPacket(context.Background(), network, ifaceIP.String())
+	tries := 0
+	for {
+		p.conn, err = cfg.ListenPacket(context.Background(), network, ifaceIP.String())
+		if err == nil {
+			break
+		}
+
+		// If the bind address wasn't found on an interface, try again for 5 minutes.
+		tries++
+		if tries < 5 {
+			log.Printf("Error putting interface in promiscuous mode, trying again: %v", err)
+			time.Sleep(time.Minute)
+		} else {
+			// If we passed 5 minutes, we should stop...
+			break
+		}
+	}
+
+	// If we failed too many times, stop.
 	if err != nil {
 		return
 	}
