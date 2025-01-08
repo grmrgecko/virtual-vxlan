@@ -18,3 +18,13 @@ func generateRandomMAC() net.HardwareAddr {
 
 	return mac
 }
+
+// Check if IP address is all zero.
+func isZeroAddr(ip net.IP) bool {
+	for _, b := range ip {
+		if b != 0x0 {
+			return false
+		}
+	}
+	return true
+}
