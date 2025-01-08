@@ -526,7 +526,7 @@ func (l *LogConfig) Apply() {
 	}
 
 	// Set the log to save to the logpath.
-	f, err := os.OpenFile(l.Path, os.O_RDWR|os.O_CREATE, 0644)
+	f, err := os.OpenFile(l.Path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Println("Failed to open log file: %s %v", l.Path, err)
 	} else {
