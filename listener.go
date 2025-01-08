@@ -36,16 +36,6 @@ type Listener struct {
 	log       *log.Entry
 }
 
-// Check if IP address is all zero.
-func isZeroAddr(ip net.IP) bool {
-	for _, b := range ip {
-		if b != 0x0 {
-			return false
-		}
-	}
-	return true
-}
-
 // Make a new listener on the specified address. This
 // listener is added to the app listener list, and errors
 // on existing listeners for the specified address.

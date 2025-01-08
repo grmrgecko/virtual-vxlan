@@ -47,12 +47,15 @@ func (a *ServerCmd) Run() error {
 			return err
 		}
 
-		// Apply the configuration read.
-		err = ApplyConfig(config)
-		// If error applying the config, we should fail.
-		if err != nil {
-			return err
-		}
+		// Apply the configuration in the background, to allow service start to notify
+		// the service managers fast.
+		go func() {
+			err = ApplyConfig(config)
+			// If error applying the config, log.
+			if err != nil {
+				log.Println("An error occurred applying configuration:", err)
+			}
+		}()
 	}
 
 	// Send notification that the service is ready.
