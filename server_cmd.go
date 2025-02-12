@@ -24,6 +24,7 @@ type App struct {
 	}
 	ControllerMac net.HardwareAddr
 	grpcServer    *GRPCServer
+	ApplyingConfig bool
 	Stop          chan struct{}
 	UpdateConfig  *UpdateConfig
 }
@@ -41,6 +42,9 @@ func (a *ServerCmd) Run() error {
 		config := ReadConfig()
 		app.UpdateConfig = config.Update
 
+		// So that other services interacting can confirm the config is applied prior to working.
+		app.ApplyingConfig = true
+
 		// Start the GRPC server for cli communication.
 		_, err := NewGRPCServer(config.RPCPath)
 		if err != nil {
@@ -55,6 +59,9 @@ func (a *ServerCmd) Run() error {
 			if err != nil {
 				log.Println("An error occurred applying configuration:", err)
 			}
+
+			// Other services may now work.
+			app.ApplyingConfig = false
 		}()
 	}
 

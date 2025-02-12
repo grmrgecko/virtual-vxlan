@@ -7,6 +7,7 @@ service vxlan {
     // Config commands.
     rpc SaveConfig (Empty) returns (Empty) {}
     rpc ReloadConfig (Empty) returns (Empty) {}
+    rpc IsApplyingConfig (Empty) returns (IsApplyingConfigReply) {}
 
     // Listener commands.
     rpc ListListeners (Empty) returns (ListListenersReply) {}
@@ -37,6 +38,11 @@ service vxlan {
 
 // Standard empty message.
 message Empty {
+}
+
+// Response to is applying config.
+message IsApplyingConfigReply {
+    bool isApplying = 1;
 }
 
 // Listener messages.

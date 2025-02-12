@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	Vxlan_SaveConfig_FullMethodName                 = "/vxlan.vxlan/SaveConfig"
 	Vxlan_ReloadConfig_FullMethodName               = "/vxlan.vxlan/ReloadConfig"
+	Vxlan_IsApplyingConfig_FullMethodName           = "/vxlan.vxlan/IsApplyingConfig"
 	Vxlan_ListListeners_FullMethodName              = "/vxlan.vxlan/ListListeners"
 	Vxlan_AddListener_FullMethodName                = "/vxlan.vxlan/AddListener"
 	Vxlan_RemoveListener_FullMethodName             = "/vxlan.vxlan/RemoveListener"
@@ -52,6 +53,7 @@ type VxlanClient interface {
 	// Config commands.
 	SaveConfig(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
 	ReloadConfig(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
+	IsApplyingConfig(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*IsApplyingConfigReply, error)
 	// Listener commands.
 	ListListeners(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ListListenersReply, error)
 	AddListener(ctx context.Context, in *Listener, opts ...grpc.CallOption) (*Empty, error)
@@ -100,6 +102,16 @@ func (c *vxlanClient) ReloadConfig(ctx context.Context, in *Empty, opts ...grpc.
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Empty)
 	err := c.cc.Invoke(ctx, Vxlan_ReloadConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vxlanClient) IsApplyingConfig(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*IsApplyingConfigReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IsApplyingConfigReply)
+	err := c.cc.Invoke(ctx, Vxlan_IsApplyingConfig_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -333,6 +345,7 @@ type VxlanServer interface {
 	// Config commands.
 	SaveConfig(context.Context, *Empty) (*Empty, error)
 	ReloadConfig(context.Context, *Empty) (*Empty, error)
+	IsApplyingConfig(context.Context, *Empty) (*IsApplyingConfigReply, error)
 	// Listener commands.
 	ListListeners(context.Context, *Empty) (*ListListenersReply, error)
 	AddListener(context.Context, *Listener) (*Empty, error)
@@ -372,6 +385,9 @@ func (UnimplementedVxlanServer) SaveConfig(context.Context, *Empty) (*Empty, err
 }
 func (UnimplementedVxlanServer) ReloadConfig(context.Context, *Empty) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReloadConfig not implemented")
+}
+func (UnimplementedVxlanServer) IsApplyingConfig(context.Context, *Empty) (*IsApplyingConfigReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IsApplyingConfig not implemented")
 }
 func (UnimplementedVxlanServer) ListListeners(context.Context, *Empty) (*ListListenersReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListListeners not implemented")
@@ -492,6 +508,24 @@ func _Vxlan_ReloadConfig_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(VxlanServer).ReloadConfig(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Vxlan_IsApplyingConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VxlanServer).IsApplyingConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Vxlan_IsApplyingConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VxlanServer).IsApplyingConfig(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -906,6 +940,10 @@ var Vxlan_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ReloadConfig",
 			Handler:    _Vxlan_ReloadConfig_Handler,
+		},
+		{
+			MethodName: "IsApplyingConfig",
+			Handler:    _Vxlan_IsApplyingConfig_Handler,
 		},
 		{
 			MethodName: "ListListeners",
