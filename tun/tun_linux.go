@@ -11,6 +11,7 @@ package tun
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/netip"
 	"os"
 	"sync"
@@ -312,6 +313,41 @@ func (tun *NativeTun) GetIPAddresses() ([]netip.Prefix, error) {
 		prefixes = append(prefixes, prefix)
 	}
 	return prefixes, nil
+}
+
+func (tun *NativeTun) AddRoute(destination netip.Prefix, gateway netip.Addr, metric int) error {
+	family := netlink.FAMILY_V4
+	if gateway.Is6() {
+		family = netlink.FAMILY_V6
+	}
+	staticRoute := &netlink.Route{
+		Family:    family,
+		LinkIndex: int(tun.index),
+		Dst: &net.IPNet{
+			IP:   destination.Addr().AsSlice(),
+			Mask: net.CIDRMask(destination.Bits(), destination.Addr().BitLen()),
+		},
+		Gw:       gateway.AsSlice(),
+		Priority: metric,
+	}
+	return netlink.RouteAdd(staticRoute)
+}
+
+func (tun *NativeTun) RemoveRoute(destination netip.Prefix, gateway netip.Addr) error {
+	family := netlink.FAMILY_V4
+	if gateway.Is6() {
+		family = netlink.FAMILY_V6
+	}
+	staticRoute := &netlink.Route{
+		Family:    family,
+		LinkIndex: int(tun.index),
+		Dst: &net.IPNet{
+			IP:   destination.Addr().AsSlice(),
+			Mask: net.CIDRMask(destination.Bits(), destination.Addr().BitLen()),
+		},
+		Gw: gateway.AsSlice(),
+	}
+	return netlink.RouteDel(staticRoute)
 }
 
 func (tun *NativeTun) MTU() (int, error) {

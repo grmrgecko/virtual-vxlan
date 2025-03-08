@@ -315,6 +315,16 @@ func (tun *NativeTun) GetIPAddresses() ([]netip.Prefix, error) {
 	return prefixes, nil
 }
 
+func (tun *NativeTun) AddRoute(destination netip.Prefix, gateway netip.Addr, metric int) error {
+	luid := winipcfg.LUID(tun.LUID())
+	return luid.AddRoute(destination, gateway, uint32(metric))
+}
+
+func (tun *NativeTun) RemoveRoute(destination netip.Prefix, gateway netip.Addr) error {
+	luid := winipcfg.LUID(tun.LUID())
+	return luid.DeleteRoute(destination, gateway)
+}
+
 // RunningVersion returns the running version of the Wintun driver.
 func (tun *NativeTun) RunningVersion() (version uint32, err error) {
 	return wintun.RunningVersion()

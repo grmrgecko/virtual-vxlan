@@ -45,6 +45,12 @@ type Device interface {
 	// Get IP Addresses for the device.
 	GetIPAddresses() ([]netip.Prefix, error)
 
+	// Add static route.
+	AddRoute(destination netip.Prefix, gateway netip.Addr, metric int) error
+
+	// Remove static route.
+	RemoveRoute(destination netip.Prefix, gateway netip.Addr) error
+
 	// Events returns a channel of type Event, which is fed Device events.
 	Events() <-chan Event
 

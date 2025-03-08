@@ -6,7 +6,7 @@ const (
 	serviceDisplayName = "Virtual VXLAN"
 	serviceVendor      = "com.mrgeckosmedia"
 	serviceDescription = "Virtual VXLAN using TUN interfaces"
-	serviceVersion     = "0.2.0"
+	serviceVersion     = "0.2.1"
 	defaultConfigFile  = "config.yaml"
 )
 

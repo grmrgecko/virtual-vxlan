@@ -310,6 +310,88 @@ func (s *GRPCServer) InterfaceFlushMACTable(ctx context.Context, in *pb.Interfac
 	return new(pb.Empty), nil
 }
 
+// Add static route to an interface.
+func (s *GRPCServer) InterfaceAddStaticRoute(ctx context.Context, in *pb.InterfaceAddStaticRouteRequest) (*pb.Empty, error) {
+	// Parse destination prefix.
+	dst, err := netip.ParsePrefix(in.Destination)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse destination prefix %s: %v", in.Destination, err)
+	}
+
+	// Parse gateway.
+	gateway, err := netip.ParseAddr(in.Gateway)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse gateway %s: %v", in.Gateway, err)
+	}
+
+	// Find interface.
+	_, ifce, err := s.FindInterface(in.ListenerName, in.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add the MAC entry.
+	err = ifce.AddStaticRoute(dst, gateway, int(in.Metric), in.Permanent)
+	if err != nil {
+		return nil, err
+	}
+
+	return new(pb.Empty), nil
+}
+
+// Remove MAC entry from an interface.
+func (s *GRPCServer) InterfaceRemoveStaticRoute(ctx context.Context, in *pb.InterfaceRemoveStaticRouteRequest) (*pb.Empty, error) {
+	// Parse destination prefix.
+	dst, err := netip.ParsePrefix(in.Destination)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse destination prefix %s: %v", in.Destination, err)
+	}
+
+	// Parse gateway.
+	gateway, err := netip.ParseAddr(in.Gateway)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse gateway %s: %v", in.Gateway, err)
+	}
+
+	// Find interface.
+	_, ifce, err := s.FindInterface(in.ListenerName, in.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Remove the MAC entry.
+	err = ifce.RemoveStaticRoute(dst, gateway)
+	if err != nil {
+		return nil, err
+	}
+
+	return new(pb.Empty), nil
+}
+
+// Get MAC entries on interface.
+func (s *GRPCServer) InterfaceGetStaticRoutes(ctx context.Context, in *pb.InterfaceRequestWithName) (*pb.InterfaceStaticRouteReply, error) {
+	// Find interface.
+	_, ifce, err := s.FindInterface(in.ListenerName, in.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get MAC entries and make reply.
+	routes := ifce.GetStaticRoutes()
+	reply := new(pb.InterfaceStaticRouteReply)
+	for _, route := range routes {
+		ent := &pb.StaticRoute{
+			Destination: route.Destination.String(),
+			Gateway:     route.Gateway.String(),
+			Metric:      int32(route.Metric),
+			Permanent:   route.Permanent,
+		}
+		reply.Routes = append(reply.Routes, ent)
+	}
+
+	return reply, nil
+}
+
 // Add static ARP entry to an interface.
 func (s *GRPCServer) InterfaceAddStaticARPEntry(ctx context.Context, in *pb.InterfaceARPEntryRequest) (*pb.Empty, error) {
 	// Parse IP address

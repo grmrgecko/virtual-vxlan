@@ -57,13 +57,14 @@ type ListenerConfig struct {
 
 // Interface configuration strucuture.
 type InterfaceConfig struct {
-	Name           string           `fig:"name" yaml:"name"`
-	VNI            uint32           `fig:"vni" yaml:"vni"`
-	MTU            int              `fig:"mtu" yaml:"mtu"`
-	MACAddress     string           `fig:"mac_address" yaml:"mac_address"`
-	IPAddressCIDRS []string         `fig:"ip_addresess_cidrs" yaml:"ip_addresess_cidrs"`
-	ARPEntries     []ARPEntryConfig `fig:"arp_entries" yaml:"arp_entries"`
-	MACEntries     []MACEntryConfig `fig:"mac_entries" yaml:"mac_entries"`
+	Name           string              `fig:"name" yaml:"name"`
+	VNI            uint32              `fig:"vni" yaml:"vni"`
+	MTU            int                 `fig:"mtu" yaml:"mtu"`
+	MACAddress     string              `fig:"mac_address" yaml:"mac_address"`
+	IPAddressCIDRS []string            `fig:"ip_addresess_cidrs" yaml:"ip_addresess_cidrs"`
+	ARPEntries     []ARPEntryConfig    `fig:"arp_entries" yaml:"arp_entries"`
+	MACEntries     []MACEntryConfig    `fig:"mac_entries" yaml:"mac_entries"`
+	StaticRoutes   []StaticRouteConfig `fig:"static_routes" yaml:"static_routes"`
 }
 
 // Permanent ARP entries.
@@ -76,6 +77,13 @@ type ARPEntryConfig struct {
 type MACEntryConfig struct {
 	MACAddress  string `fig:"mac_address" yaml:"mac_address"`
 	Destination string `fig:"destination" yaml:"destination"`
+}
+
+// Permanent static routes.
+type StaticRouteConfig struct {
+	Destination string `fig:"destination" yaml:"destination"`
+	Gateway     string `fig:"gateway" yaml:"gateway"`
+	Metric      int    `fig:"metric" yaml:"metric"`
 }
 
 // Applies common filters to the read configuration.
@@ -387,6 +395,34 @@ func ApplyConfig(config *Config) (err error) {
 				}
 				i.AddMACEntry(mac, dst, true)
 			}
+
+			// Flush the route table of any permanent entry.
+			i.tables.Lock()
+			found = true
+			for found {
+				found = false
+				for _, ent := range i.tables.route {
+					if ent.Permanent {
+						found = true
+						i.RemoveStaticRoute(ent.Destination, ent.Gateway)
+						break
+					}
+				}
+			}
+			i.tables.Unlock()
+
+			// Add permanent routes from this config.
+			for _, ent := range iface.StaticRoutes {
+				destination, err := netip.ParsePrefix(ent.Destination)
+				if err != nil {
+					return fmt.Errorf("failed to parse destination prefix %s: %v", ent.Destination, err)
+				}
+				gateway, err := netip.ParseAddr(ent.Gateway)
+				if err != nil {
+					return fmt.Errorf("failed to parse gateway %s: %v", ent.Gateway, err)
+				}
+				i.AddStaticRoute(destination, gateway, ent.Metric, true)
+			}
 		}
 	}
 
@@ -466,6 +502,18 @@ func SaveConfig() error {
 								Destination: ent.Dst.IP.String(),
 							}
 							ifce.MACEntries = append(ifce.MACEntries, entry)
+						}
+					}
+
+					// Get and add permanent static routes to the config.
+					for _, ent := range iface.GetStaticRoutes() {
+						if ent.Permanent {
+							route := StaticRouteConfig{
+								Destination: ent.Destination.String(),
+								Gateway:     ent.Gateway.String(),
+								Metric:      ent.Metric,
+							}
+							ifce.StaticRoutes = append(ifce.StaticRoutes, route)
 						}
 					}
 

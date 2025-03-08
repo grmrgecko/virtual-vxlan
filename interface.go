@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math"
 	"math/rand"
 	"net"
 	"net/netip"
@@ -25,6 +26,14 @@ type ArpEntry struct {
 	Expires   time.Time
 	Permanent bool
 	Updating  bool
+}
+
+// Static Route.
+type StaticRoute struct {
+	Destination netip.Prefix
+	Gateway     netip.Addr
+	Metric      int
+	Permanent   bool
 }
 
 // MAC Table Entry.
@@ -57,6 +66,7 @@ type Interface struct {
 	tables struct {
 		arp      []ArpEntry
 		arpEvent map[netip.Addr][]chan net.HardwareAddr
+		route    []StaticRoute
 		mac      []MacEntry
 		sync.RWMutex
 	}
@@ -392,6 +402,83 @@ func (i *Interface) GetDestinationFor(mac net.HardwareAddr) *net.UDPAddr {
 	return nil
 }
 
+// Add static route to interface.
+func (i *Interface) AddStaticRoute(destination netip.Prefix, gateway netip.Addr, metric int, perm bool) error {
+	// Prevent concurrent table modifications.
+	i.tables.Lock()
+	defer i.tables.Unlock()
+	i.tun.Lock()
+	defer i.tun.Unlock()
+
+	// Default to 256 metric.
+	if metric == 0 {
+		metric = 256
+	}
+
+	// Try adding via tunnel device.
+	err := i.tun.device.AddRoute(destination, gateway, metric)
+	if err != nil {
+		return err
+	}
+
+	// If route successfully added, add to route table.
+	route := StaticRoute{
+		Destination: destination,
+		Gateway:     gateway,
+		Metric:      metric,
+		Permanent:   perm,
+	}
+	i.tables.route = append(i.tables.route, route)
+	return nil
+}
+
+// Remove static route from interface.
+func (i *Interface) RemoveStaticRoute(destination netip.Prefix, gateway netip.Addr) error {
+	// Prevent concurrent table modifications.
+	i.tables.Lock()
+	defer i.tables.Unlock()
+	i.tun.Lock()
+	defer i.tun.Unlock()
+
+	// Remove from device first.
+	err := i.tun.device.RemoveRoute(destination, gateway)
+	if err != nil {
+		return err
+	}
+
+	// Remove from table.
+	for r, route := range i.tables.route {
+		// If route matches, remove it.
+		if route.Destination == destination && route.Gateway == gateway {
+			i.tables.route = append(i.tables.route[:r], i.tables.route[r+1:]...)
+			break
+		}
+	}
+	return nil
+}
+
+// Returns the static route table.
+func (i *Interface) GetStaticRoutes() []StaticRoute {
+	i.tables.RLock()
+	defer i.tables.RUnlock()
+	return i.tables.route
+}
+
+// Find gateway for IP.
+func (i *Interface) GetGateway(destination netip.Addr) (gateway netip.Addr) {
+	// Get read lock on table.
+	i.tables.RLock()
+	defer i.tables.RUnlock()
+	metric := math.MaxInt
+	for _, route := range i.tables.route {
+		if route.Destination.Contains(destination) && route.Metric < metric {
+			gateway = route.Gateway
+			metric = route.Metric
+		}
+	}
+	return
+}
+
 // Add an ARP entry that is static.
 func (i *Interface) AddStaticARPEntry(addr netip.Addr, mac net.HardwareAddr, perm bool) {
 	// Prevent concurrent table modifications.
@@ -598,6 +685,13 @@ func (i *Interface) updateARPFor(addr netip.Addr, brdMac net.HardwareAddr, ifceA
 // Find the MAC address for an IP address from the ARP table.
 // If an entry doesn't exist, we will attempt to request it.
 func (i *Interface) GetMacFor(addr netip.Addr) (net.HardwareAddr, error) {
+	// First, check if a static route defines a replacement address.
+	gateway := i.GetGateway(addr)
+	// If an gateway is defined, replace the requested address with the gateway.
+	if gateway.IsValid() {
+		addr = gateway
+	}
+
 	// Lots of math depending on is4.
 	is4 := addr.Is4()
 

@@ -30,6 +30,9 @@ service vxlan {
     rpc InterfaceRemoveMACEntry (InterfaceRemoveMacEntryRequest) returns (Empty) {}
     rpc InterfaceGetMACEntries (InterfaceRequestWithName) returns (InterfaceMacEntryReply) {}
     rpc InterfaceFlushMACTable (InterfaceRequestWithName) returns (Empty) {}
+    rpc InterfaceAddStaticRoute (InterfaceAddStaticRouteRequest) returns (Empty) {}
+    rpc InterfaceRemoveStaticRoute (InterfaceRemoveStaticRouteRequest) returns (Empty) {}
+    rpc InterfaceGetStaticRoutes (InterfaceRequestWithName) returns (InterfaceStaticRouteReply) {}
     rpc InterfaceAddStaticARPEntry (InterfaceARPEntryRequest) returns (Empty) {}
     rpc InterfaceRemoveARPEntry (InterfaceRemoveARPEntryRequest) returns (Empty) {}
     rpc InterfaceGetARPEntries (InterfaceRequestWithName) returns (InterfaceArpEntryReply) {}
@@ -148,6 +151,33 @@ message MacEntry {
 
 message InterfaceMacEntryReply {
     repeated MacEntry entries = 1;
+}
+
+message InterfaceAddStaticRouteRequest {
+    string listenerName = 1;
+    string name = 2;
+    string destination = 3;
+    string gateway = 4;
+    int32 metric = 5;
+    bool permanent = 6;
+}
+
+message InterfaceRemoveStaticRouteRequest {
+    string listenerName = 1;
+    string name = 2;
+    string destination = 3;
+    string gateway = 4;
+}
+
+message StaticRoute {
+    string destination = 1;
+    string gateway = 2;
+    int32 metric = 3;
+    bool permanent = 4;
+}
+
+message InterfaceStaticRouteReply {
+    repeated StaticRoute routes = 1;
 }
 
 message InterfaceARPEntryRequest {

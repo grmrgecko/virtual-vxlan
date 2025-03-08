@@ -429,6 +429,118 @@ func (a *InterfaceFlushMACTableCmd) Run(l *ListenerCmd, i *InterfaceCmd) (err er
 	return
 }
 
+// Command to add a static route to an interface.
+type InterfaceAddStaticRouteCmd struct {
+	Destination string `help:"The CIDR of the destination network" required:""`
+	Gateway     string `help:"The IP address to route traffic via." required:""`
+	Metric      int    `help:"Metric value to set route priority." required:""`
+	Permanent   bool   `help:"Should the MAC entry be saved to disk?"`
+}
+
+func (a *InterfaceAddStaticRouteCmd) Run(l *ListenerCmd, i *InterfaceCmd) (err error) {
+	// Connect to GRPC.
+	c, conn, err := NewGRPCClient()
+	if err != nil {
+		return
+	}
+	defer conn.Close()
+
+	// Setup call timeout of 10 seconds.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Attempt to add static route to an interface.
+	ifce := &pb.InterfaceAddStaticRouteRequest{
+		ListenerName: l.name(),
+		Name:         i.name(),
+		Destination:  a.Destination,
+		Gateway:      a.Gateway,
+		Metric:       int32(a.Metric),
+		Permanent:    a.Permanent,
+	}
+	_, err = c.InterfaceAddStaticRoute(ctx, ifce)
+	if err != nil {
+		return
+	}
+
+	fmt.Println("Added static route.")
+	return
+}
+
+// Command to remove a static route from an interface.
+type InterfaceRemoveStaticRouteCmd struct {
+	Destination string `help:"The CIDR of the destination network" required:""`
+	Gateway     string `help:"The IP address to route traffic via." required:""`
+}
+
+func (a *InterfaceRemoveStaticRouteCmd) Run(l *ListenerCmd, i *InterfaceCmd) (err error) {
+	// Connect to GRPC.
+	c, conn, err := NewGRPCClient()
+	if err != nil {
+		return
+	}
+	defer conn.Close()
+
+	// Setup call timeout of 10 seconds.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Attempt to remove a static route from an interface.
+	ifce := &pb.InterfaceRemoveStaticRouteRequest{
+		ListenerName: l.name(),
+		Name:         i.name(),
+		Destination:  a.Destination,
+		Gateway:      a.Gateway,
+	}
+	_, err = c.InterfaceRemoveStaticRoute(ctx, ifce)
+	if err != nil {
+		return
+	}
+
+	fmt.Println("Removed static route.")
+	return
+}
+
+// Command to get static routes on an interface.
+type InterfaceGetStaticRoutesCmd struct{}
+
+func (a *InterfaceGetStaticRoutesCmd) Run(l *ListenerCmd, i *InterfaceCmd) (err error) {
+	// Connect to GRPC.
+	c, conn, err := NewGRPCClient()
+	if err != nil {
+		return
+	}
+	defer conn.Close()
+
+	// Setup call timeout of 10 seconds.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Attempt to get static routes on an interface.
+	ifce := &pb.InterfaceRequestWithName{
+		ListenerName: l.name(),
+		Name:         i.name(),
+	}
+	r, err := c.InterfaceGetStaticRoutes(ctx, ifce)
+	if err != nil {
+		return
+	}
+
+	// Setup table for static routes.
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.AppendHeader(table.Row{"Destination", "Gateway", "Metric", "Permanent"})
+
+	// Add rows for entries.
+	for _, ent := range r.Routes {
+		t.AppendRow([]interface{}{ent.Destination, ent.Gateway, ent.Metric, ent.Permanent})
+	}
+
+	// Render the table.
+	t.Render()
+	return
+}
+
 // Command to add an MAC entry to an interface.
 type InterfaceAddStaticARPEntryCmd struct {
 	Address   string `help:"IP address" required:""`
@@ -582,6 +694,9 @@ type InterfaceCmd struct {
 		RemoveMACEntry    InterfaceRemoveMACEntryCmd    `cmd:""`
 		GetMACEntries     InterfaceGetMACEntriesCmd     `cmd:""`
 		FlushMACTable     InterfaceFlushMACTableCmd     `cmd:""`
+		AddStaticRoute    InterfaceAddStaticRouteCmd    `cmd:""`
+		RemoveStaticRoute InterfaceRemoveStaticRouteCmd `cmd:""`
+		GetStaticRoutes   InterfaceGetStaticRoutesCmd   `cmd:""`
 		AddStaticARPEntry InterfaceAddStaticARPEntryCmd `cmd:""`
 		RemoveARPEntry    InterfaceRemoveARPEntryCmd    `cmd:""`
 		GetARPEntries     InterfaceGetARPEntriesCmd     `cmd:""`
