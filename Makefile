@@ -2,7 +2,7 @@ VERSION ?= $(shell git describe --tags `git rev-list --tags --max-count=1`)
 GITREV = $(shell git rev-parse --short HEAD)
 BUILDTIME = $(shell date +'%FT%TZ%z')
 PACKAGE_NAME        := github.com/grmrgecko/virtual-vxlan
-GO_BUILDER_VERSION  ?= 1.23
+GO_BUILDER_VERSION  ?= 1.24
 
 .PHONY: default
 default: build ;

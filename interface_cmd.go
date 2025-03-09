@@ -434,7 +434,7 @@ type InterfaceAddStaticRouteCmd struct {
 	Destination string `help:"The CIDR of the destination network" required:""`
 	Gateway     string `help:"The IP address to route traffic via." required:""`
 	Metric      int    `help:"Metric value to set route priority." required:""`
-	Permanent   bool   `help:"Should the MAC entry be saved to disk?"`
+	Permanent   bool   `help:"Should the static route be saved to disk?"`
 }
 
 func (a *InterfaceAddStaticRouteCmd) Run(l *ListenerCmd, i *InterfaceCmd) (err error) {
@@ -541,7 +541,7 @@ func (a *InterfaceGetStaticRoutesCmd) Run(l *ListenerCmd, i *InterfaceCmd) (err 
 	return
 }
 
-// Command to add an MAC entry to an interface.
+// Command to add an ARP entry to an interface.
 type InterfaceAddStaticARPEntryCmd struct {
 	Address   string `help:"IP address" required:""`
 	MAC       string `help:"MAC address" required:""`
@@ -577,7 +577,7 @@ func (a *InterfaceAddStaticARPEntryCmd) Run(l *ListenerCmd, i *InterfaceCmd) (er
 	return
 }
 
-// Command to remove an MAC entry from an interface.
+// Command to remove an ARP entry from an interface.
 type InterfaceRemoveARPEntryCmd struct {
 	Address string `help:"IP address" required:""`
 }
@@ -609,7 +609,7 @@ func (a *InterfaceRemoveARPEntryCmd) Run(l *ListenerCmd, i *InterfaceCmd) (err e
 	return
 }
 
-// Command to get MAC entries on an interface.
+// Command to get ARP entries on an interface.
 type InterfaceGetARPEntriesCmd struct{}
 
 func (a *InterfaceGetARPEntriesCmd) Run(l *ListenerCmd, i *InterfaceCmd) (err error) {
@@ -649,7 +649,7 @@ func (a *InterfaceGetARPEntriesCmd) Run(l *ListenerCmd, i *InterfaceCmd) (err er
 	return
 }
 
-// Command to remove all mac entries from an interface.
+// Command to remove all ARP entries from an interface.
 type InterfaceFlushARPTableCmd struct{}
 
 func (a *InterfaceFlushARPTableCmd) Run(l *ListenerCmd, i *InterfaceCmd) (err error) {

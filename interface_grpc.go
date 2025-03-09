@@ -330,7 +330,7 @@ func (s *GRPCServer) InterfaceAddStaticRoute(ctx context.Context, in *pb.Interfa
 		return nil, err
 	}
 
-	// Add the MAC entry.
+	// Add the static route.
 	err = ifce.AddStaticRoute(dst, gateway, int(in.Metric), in.Permanent)
 	if err != nil {
 		return nil, err
@@ -339,7 +339,7 @@ func (s *GRPCServer) InterfaceAddStaticRoute(ctx context.Context, in *pb.Interfa
 	return new(pb.Empty), nil
 }
 
-// Remove MAC entry from an interface.
+// Remove static route from an interface.
 func (s *GRPCServer) InterfaceRemoveStaticRoute(ctx context.Context, in *pb.InterfaceRemoveStaticRouteRequest) (*pb.Empty, error) {
 	// Parse destination prefix.
 	dst, err := netip.ParsePrefix(in.Destination)
@@ -359,7 +359,7 @@ func (s *GRPCServer) InterfaceRemoveStaticRoute(ctx context.Context, in *pb.Inte
 		return nil, err
 	}
 
-	// Remove the MAC entry.
+	// Remove the static route.
 	err = ifce.RemoveStaticRoute(dst, gateway)
 	if err != nil {
 		return nil, err
@@ -368,7 +368,7 @@ func (s *GRPCServer) InterfaceRemoveStaticRoute(ctx context.Context, in *pb.Inte
 	return new(pb.Empty), nil
 }
 
-// Get MAC entries on interface.
+// Get static routes on interface.
 func (s *GRPCServer) InterfaceGetStaticRoutes(ctx context.Context, in *pb.InterfaceRequestWithName) (*pb.InterfaceStaticRouteReply, error) {
 	// Find interface.
 	_, ifce, err := s.FindInterface(in.ListenerName, in.Name)
@@ -376,7 +376,7 @@ func (s *GRPCServer) InterfaceGetStaticRoutes(ctx context.Context, in *pb.Interf
 		return nil, err
 	}
 
-	// Get MAC entries and make reply.
+	// Get static routes and make reply.
 	routes := ifce.GetStaticRoutes()
 	reply := new(pb.InterfaceStaticRouteReply)
 	for _, route := range routes {
